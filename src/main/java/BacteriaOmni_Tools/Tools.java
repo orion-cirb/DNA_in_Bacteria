@@ -2,17 +2,14 @@ package BacteriaOmni_Tools;
 
 import BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
 import BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
-import edu.mines.jtk.util.AtomicFloat;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import fiji.util.gui.GenericDialogPlus;
-import ij.gui.WaitForUserDialog;
 import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
-import ij.process.ImageProcessor;
 import java.awt.Color;
 import java.awt.Font;
 import java.io.BufferedWriter;
@@ -21,7 +18,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ResourceBundle;
 import javax.swing.ImageIcon;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
@@ -37,8 +33,6 @@ import mcib3d.geom2.measurements.MeasureCentroid;
 import mcib3d.geom2.measurements.MeasureFeret;
 import mcib3d.geom2.measurements.MeasureVolume;
 import mcib3d.geom2.measurementsPopulation.MeasurePopulationClosestDistance;
-import mcib3d.geom2.measurementsPopulation.MeasurePopulationColocalisation;
-import mcib3d.geom2.measurementsPopulation.MeasurePopulationDistance;
 import mcib3d.geom2.measurementsPopulation.PairObjects3DInt;
 import mcib3d.image3d.ImageHandler;
 import mcib3d.image3d.ImageInt;
@@ -46,7 +40,6 @@ import mcib3d.image3d.ImageLabeller;
 import org.apache.commons.io.FilenameUtils;
 import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.haesleinhuepf.clij2.CLIJ2;
-
 
 
 /**
@@ -70,9 +63,14 @@ public class Tools {
     // Bacteria
     private double minBactSurface = 0.3;
     private double maxBactSurface = 5;
+    
     // Foci
     private double minFociSurface = 0.005;
     private double maxFociSurface = 0.5;
+    // Foci segmentation method
+    private String[] fociDetectors = {"DOG", "LOG"};
+    private String fociDetector = "LOG";
+    
     private String fociTh = "Moments";
     
     // DOG parameters
@@ -121,6 +119,28 @@ public class Tools {
         ImagePlus imgDOG = clij2.pull(imgCLDOG);
         clij2.release(imgCLDOG);
         return(imgDOG);
+    }
+    
+    
+    /**
+     * Laplace of Gaussians 
+     * Using CLIJ2
+     * @param imgCL
+     * @param size1
+     * @param size2
+     * @return imgGauss
+     */ 
+    public ImagePlus laplacianOfGaussian(ImagePlus img, double size1, double size2) {
+        ClearCLBuffer imgCL = clij2.push(img);
+        ClearCLBuffer temp1 = clij2.create(imgCL);
+        ClearCLBuffer imgCLLOG = clij2.create(imgCL);
+        clij2.gaussianBlur2D(imgCL, temp1, size1, size2);
+        clij2.laplaceBox(temp1, imgCLLOG);
+        clij2.release(imgCL);
+        clij2.release(temp1);
+        ImagePlus imgLog = clij2.pull(imgCLLOG);
+        clij2.release(imgCLLOG);
+        return(imgLog);
     }
     
     
@@ -291,6 +311,8 @@ public class Tools {
         }
         gd.addDirectoryField("Omnipose environment directory: ", omniposeEnvDirPath);
         gd.addDirectoryField("Omnipose models path: ", omniposeModelsPath); 
+        gd.addMessage("Foci detector", Font.getFont("Monospace"), Color.blue);
+        gd.addChoice("Detector : ", fociDetectors, fociDetector);
         gd.addMessage("Object size threshold ", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Min bacterium surface (µm2): ", minBactSurface);
         gd.addNumericField("Max bacterium surface (µm2): ", maxBactSurface);
@@ -305,6 +327,7 @@ public class Tools {
             ch[i] = gd.getNextChoice();
         omniposeEnvDirPath = gd.getNextString();
         omniposeModelsPath = gd.getNextString();
+        fociDetector = gd.getNextChoice();
         minBactSurface = (float) gd.getNextNumber();
         maxBactSurface = (float) gd.getNextNumber();
         minFociSurface = (float) gd.getNextNumber();
@@ -408,10 +431,12 @@ public class Tools {
      */
     
     public Objects3DIntPopulation findFoci(ImagePlus img) {
-        ImagePlus imgDog = DOG(img, minFociDOG, maxFociDOG);
-        ImagePlus imgBin = threshold(imgDog, fociTh);
+        ImagePlus imgFilter = (fociDetector.equals("DOG") ? DOG(img, minFociDOG, maxFociDOG) : laplacianOfGaussian(img, minFociDOG, maxFociDOG));
+        ImagePlus imgBin = threshold(imgFilter, fociTh);
+        flush_close(imgFilter);
         imgBin.setCalibration(cal);
         Objects3DIntPopulation fociPop = getPopFromImage(imgBin);
+        flush_close(imgBin);
         popFilterSize(fociPop, minFociSurface, maxFociSurface);
         return(fociPop);
         
@@ -481,9 +506,9 @@ public class Tools {
      * Compute bacteria area
      * 
      **/
-    private double bacteriaArea(Object3DInt bactObj ) {
+    private double bacteriaSurface(Object3DInt bactObj ) {
         int pixelNb = bactObj.getObject3DPlanes().get(0).getVoxels().size();
-        return(pixelNb*cal.pixelWidth*cal.pixelHeight);
+        return(pixelNb*pixelSurf);
     }   
     
     
@@ -501,7 +526,7 @@ public class Tools {
         for (Object3DInt bact : bactPop.getObjects3DInt()) {
             float bactLabel = bact.getLabel();
             //double bactSurf = new MeasureVolume(bact).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
-            double bactSurf = bacteriaArea(bact);
+            double bactSurf = bacteriaSurface(bact);
             VoxelInt feret1Unit = new MeasureFeret(bact).getFeret1Unit();
             VoxelInt feret2Unit = new MeasureFeret(bact).getFeret2Unit();
             double bactLength = feret1Unit.distance(feret2Unit)*cal.pixelWidth;
