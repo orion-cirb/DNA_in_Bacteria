@@ -1,4 +1,4 @@
-import Adn_BacteriaOmni_Tools.Tools;
+import Dna_BacteriaOmni_Tools.Tools;
 import ij.*;
 import ij.plugin.PlugIn;
 import ij.plugin.ZProjector;
@@ -26,10 +26,10 @@ import org.scijava.util.ArrayUtils;
 
 
 /**
- * Detect ADN bacteria with OmniPose
+ * Detect DNA bacteria with OmniPose
  * @author Orion-CIRB
  */
-public class Adn_Bacteria implements PlugIn {
+public class Dna_Bacteria implements PlugIn {
     
     Tools tools = new Tools();
     private String imageDir = "";
@@ -64,8 +64,8 @@ public class Adn_Bacteria implements PlugIn {
                 outDir.mkdir();
             }
             // Write header in results file
-             String header = "Image name\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tAdn number\t#Adn\tAdn Area\tAdn intensity\t"
-                     + "Adn center to bacterium center\n";
+             String header = "Image name\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tDna number\t#Dna\tDna Area\tDna intensity\t"
+                     + "Dna center to bacterium center\n";
             
             FileWriter fwResults = new FileWriter(outDirResults + "results.xls", false);
             results = new BufferedWriter(fwResults);
@@ -116,32 +116,32 @@ public class Adn_Bacteria implements PlugIn {
                 System.out.println(bactPop.getNbObjects() + " bacteria found");
                 
                 
-                // Open adn channel
+                // Open dna channel
                 indexCh = ArrayUtils.indexOf(channels, chs[1]);
-                System.out.println("Opening Adn channel "+chs[1]);
-                ImagePlus adnStack = BF.openImagePlus(options)[indexCh];
-                ImagePlus imgAdn = tools.doZProjection(adnStack, ZProjector.MAX_METHOD);
-                tools.flush_close(adnStack);
-                tools.print("- Detecting Adn -");
-                Objects3DIntPopulation adnPop = tools.omniposeDetection(imgAdn, tools.omniposeAdnModel, tools.minAdnSurface, tools.maxAdnSurface);
-                System.out.println(adnPop.getNbObjects() + " adn found");
-                tools.adnBactLink(bactPop, adnPop);
-                System.out.println(adnPop.getNbObjects() + " adn found in bacteria");
+                System.out.println("Opening Dna channel "+chs[1]);
+                ImagePlus dnaStack = BF.openImagePlus(options)[indexCh];
+                ImagePlus imgDna = tools.doZProjection(dnaStack, ZProjector.MAX_METHOD);
+                tools.flush_close(dnaStack);
+                tools.print("- Detecting Dna -");
+                Objects3DIntPopulation dnaPop = tools.omniposeDetection(imgDna, tools.omniposeDnaModel, tools.minDnaSurface, tools.maxDnaSurface);
+                System.out.println(dnaPop.getNbObjects() + " dna found");
+                tools.dnaBactLink(bactPop, dnaPop);
+                System.out.println(dnaPop.getNbObjects() + " dna found in bacteria");
                 
                 // Save results
                 tools.print("- Saving results -");
-                tools.saveResults(bactPop, adnPop, imgAdn, rootName, results);
-                tools.flush_close(imgAdn);
+                tools.saveResults(bactPop, dnaPop, imgDna, rootName, results);
+                tools.flush_close(imgDna);
                 
                 // Save images
-                tools.drawResults(imgBact, bactPop, adnPop, rootName, outDirResults);
+                tools.drawResults(imgBact, bactPop, dnaPop, rootName, outDirResults);
                 tools.flush_close(imgBact);
             }
         
             tools.print("--- All done! ---");
             
         }   catch (IOException | FormatException | DependencyException | ServiceException ex) {
-            Logger.getLogger(Adn_Bacteria.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Dna_Bacteria.class.getName()).log(Level.SEVERE, null, ex);
         }  
     }
 }    

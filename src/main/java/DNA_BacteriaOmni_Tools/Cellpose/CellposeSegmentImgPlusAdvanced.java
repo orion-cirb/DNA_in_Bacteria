@@ -1,6 +1,6 @@
-package Adn_BacteriaOmni_Tools.Cellpose;
+package DNA_BacteriaOmni_Tools.Cellpose;
 
-import Adn_BacteriaOmni_Tools.Cellpose.CellposeTask;
+import DNA_BacteriaOmni_Tools.Cellpose.CellposeTask;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;

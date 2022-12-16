@@ -1,7 +1,7 @@
-package Adn_BacteriaOmni_Tools;
+package Dna_BacteriaOmni_Tools;
 
-import Adn_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
-import Adn_BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
+import DNA_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
+import DNA_BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -53,7 +53,7 @@ public class Tools {
     private String omniposeModelsPath = (IJ.isWindows()) ? System.getProperty("user.home")+"\\.cellpose\\models\\" :
             System.getProperty("user.home")+"/.cellpose/models/";
     public String omniposeBactModel = "bact_phase_omnitorch_0";
-    public String omniposeAdnModel = "bact_fluor_omnitorch_0";
+    public String omniposeDnaModel = "bact_fluor_omnitorch_0";
      
     private int omniposeDiameter = 10;
     private int omniposeMaskThreshold = 0;
@@ -64,9 +64,9 @@ public class Tools {
     public double minBactSurface = 0.3;
     public double maxBactSurface = 5;
     
-    // Adn
-    public double minAdnSurface = 0.10;
-    public double maxAdnSurface = 5;
+    // Dna
+    public double minDnaSurface = 0.10;
+    public double maxDnaSurface = 5;
     
     private final CLIJ2 clij2 = CLIJ2.getInstance();
     
@@ -230,7 +230,7 @@ public class Tools {
      * Generate dialog box
      */
     public String[] dialog(String[] channels) {
-        String[] channelsName = {"Bacteria : ", "Adn : "};
+        String[] channelsName = {"Bacteria : ", "Dna : "};
         GenericDialogPlus gd = new GenericDialogPlus("Parameters");
         gd.setInsets​(0, 80, 0);
         gd.addImage(icon);
@@ -246,8 +246,8 @@ public class Tools {
         gd.addMessage("Object size threshold ", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Min bacterium surface (µm2): ", minBactSurface);
         gd.addNumericField("Max bacterium surface (µm2): ", maxBactSurface);
-        gd.addNumericField("Min Adn surface (µm2)      : ", minAdnSurface);
-        gd.addNumericField("Max Adn surface (µm2)      : ", maxAdnSurface);
+        gd.addNumericField("Min Dna surface (µm2)      : ", minDnaSurface);
+        gd.addNumericField("Max Dna surface (µm2)      : ", maxDnaSurface);
         
         gd.addMessage("Image calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("XY calibration (µm):", cal.pixelWidth);
@@ -259,8 +259,8 @@ public class Tools {
         omniposeModelsPath = gd.getNextString();
         minBactSurface = (float) gd.getNextNumber();
         maxBactSurface = (float) gd.getNextNumber();
-        minAdnSurface = (float) gd.getNextNumber();
-        maxAdnSurface = (float) gd.getNextNumber();
+        minDnaSurface = (float) gd.getNextNumber();
+        maxDnaSurface = (float) gd.getNextNumber();
         cal.pixelWidth = gd.getNextNumber();
         pixelSurf = cal.pixelWidth*cal.pixelWidth;
         if(gd.wasCanceled())
@@ -354,48 +354,48 @@ public class Tools {
     
     
      /**
-     * Find coloc between Adn and bacteria
-     * set label of colocalized bacteria in adn ID object
+     * Find coloc between Dna and bacteria
+     * set label of colocalized bacteria in dna ID object
      * @param bactPop
-     * @param adnPop
+     * @param dnaPop
      */
-    public void adnBactLink(Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop) {
-        if (bactPop.getNbObjects() != 0 && adnPop.getNbObjects() != 0) {
+    public void dnaBactLink(Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop) {
+        if (bactPop.getNbObjects() != 0 && dnaPop.getNbObjects() != 0) {
             for (Object3DInt bact : bactPop.getObjects3DInt()) {
-                for (Object3DInt adn : adnPop.getObjects3DInt()) {
-                    MeasureCentroid adnCenter = new MeasureCentroid(adn);
-                    if (bact.contains(adnCenter.getCentroidRoundedAsVoxelInt())){
-                       adn.setIdObject(bact.getLabel()); 
+                for (Object3DInt dna : dnaPop.getObjects3DInt()) {
+                    MeasureCentroid dnaCenter = new MeasureCentroid(dna);
+                    if (bact.contains(dnaCenter.getCentroidRoundedAsVoxelInt())){
+                       dna.setIdObject(bact.getLabel()); 
                     }
                 }
             }
         }
         // remove foci not in bacteria
-        adnPop.getObjects3DInt().removeIf(p -> p.getIdObject() == 0);
-        adnPop.resetLabels();
+        dnaPop.getObjects3DInt().removeIf(p -> p.getIdObject() == 0);
+        dnaPop.resetLabels();
     }
     
     /**
-     * Compute distance between adn center to bacteria center
+     * Compute distance between dna center to bacteria center
      */
-    private double adnBactDistance(Object3DInt adn, Object3DInt bact) {
+    private double dnaBactDistance(Object3DInt dna, Object3DInt bact) {
         Voxel3D bactCenter = new MeasureCentroid(bact).getCentroidAsVoxel();
-        Voxel3D adnCenter = new MeasureCentroid(adn).getCentroidAsVoxel();
-        double dist = bactCenter.distance(adnCenter)*cal.pixelWidth;
+        Voxel3D dnaCenter = new MeasureCentroid(dna).getCentroidAsVoxel();
+        double dist = bactCenter.distance(dnaCenter)*cal.pixelWidth;
         return(dist);
     }
     
     /**
      * 
     */
-    private Objects3DIntPopulation findAdnBact(float bactLabel, Objects3DIntPopulation adnPop) {
-        Objects3DIntPopulation adnBactPop = new Objects3DIntPopulation();
-        for (Object3DInt adn : adnPop.getObjects3DInt()) {
-                if (adn.getIdObject() == bactLabel)
-                    adnBactPop.addObject(adn);
+    private Objects3DIntPopulation findDnaBact(float bactLabel, Objects3DIntPopulation dnaPop) {
+        Objects3DIntPopulation dnaBactPop = new Objects3DIntPopulation();
+        for (Object3DInt dna : dnaPop.getObjects3DInt()) {
+                if (dna.getIdObject() == bactLabel)
+                    dnaBactPop.addObject(dna);
         }
-        adnBactPop.resetLabels();
-        return(adnBactPop) ;           
+        dnaBactPop.resetLabels();
+        return(dnaBactPop) ;           
     }
     
     
@@ -413,12 +413,12 @@ public class Tools {
     /**
      * Compute bacteria parameters and save them in file
      * @param bactPop
-     * @param adnPop
+     * @param dnaPop
      * @param imgName
      * @param file
      * @throws java.io.IOException
      */
-    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop, ImagePlus adnImg, String imgName, BufferedWriter file) throws IOException {
+    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop, ImagePlus dnaImg, String imgName, BufferedWriter file) throws IOException {
         for (Object3DInt bact : bactPop.getObjects3DInt()) {
             float bactLabel = bact.getLabel();
             double bactSurf = bacteriaSurface(bact);
@@ -426,23 +426,23 @@ public class Tools {
             VoxelInt feret2Unit = new MeasureFeret(bact).getFeret2Unit();
             double bactLength = feret1Unit.distance(feret2Unit)*cal.pixelWidth;
             
-            Objects3DIntPopulation adnBactPop = findAdnBact(bactLabel, adnPop);
-            int adnNb = adnBactPop.getNbObjects();
-            if (adnNb == 0) {
-                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+adnNb+"\n");
+            Objects3DIntPopulation dnaBactPop = findDnaBact(bactLabel, dnaPop);
+            int dnaNb = dnaBactPop.getNbObjects();
+            if (dnaNb == 0) {
+                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\n");
                 file.flush();
             }
             else {
-                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+adnNb+"\t");
-                for (Object3DInt adn : adnBactPop.getObjects3DInt()) {
-                    int i = (int)adn.getLabel();
-                    double adnSurf = bacteriaSurface(adn);
-                    double adnInt = new MeasureIntensity(adn, ImageHandler.wrap(adnImg)).getValueMeasurement(MeasureIntensity.INTENSITY_SUM);
-                    double adnDist = adnBactDistance(adn, bact);
+                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\t");
+                for (Object3DInt dna : dnaBactPop.getObjects3DInt()) {
+                    int i = (int)dna.getLabel();
+                    double dnaSurf = bacteriaSurface(dna);
+                    double dnaInt = new MeasureIntensity(dna, ImageHandler.wrap(dnaImg)).getValueMeasurement(MeasureIntensity.INTENSITY_SUM);
+                    double dnaDist = dnaBactDistance(dna, bact);
                     if (i == 1)
-                        file.write(i+"\t"+adnSurf+"\t"+adnInt+"\t"+adnDist+"\n");
+                        file.write(i+"\t"+dnaSurf+"\t"+dnaInt+"\t"+dnaDist+"\n");
                     else
-                        file.write("\t\t\t\t\t"+i+"\t"+adnSurf+"\t"+adnInt+"\t"+adnDist+"\n");
+                        file.write("\t\t\t\t\t"+i+"\t"+dnaSurf+"\t"+dnaInt+"\t"+dnaDist+"\n");
                 }
                 file.flush();
             }
@@ -451,7 +451,7 @@ public class Tools {
    
     
     // Save objects image
-    public void drawResults(ImagePlus img, Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop, String imgName, String outDir) {
+    public void drawResults(ImagePlus img, Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop, String imgName, String outDir) {
         ImageHandler imgBact = ImageHandler.wrap(img).createSameDimensions();
         bactPop.drawInImage(imgBact);
         IJ.run(imgBact.getImagePlus(), "glasbey on dark", "");
@@ -459,15 +459,15 @@ public class Tools {
         FileSaver ImgBactObjectsFile = new FileSaver(imgBact.getImagePlus());
         ImgBactObjectsFile.saveAsTiff(outDir+imgName+"_bacteria.tif");
         
-        ImageHandler imgAdn = ImageHandler.wrap(img).createSameDimensions();
-        adnPop.resetLabels();
-        adnPop.drawInImage(imgAdn);
-        imgAdn.getImagePlus().setCalibration(cal);
-        IJ.run(imgAdn.getImagePlus(), "glasbey on dark", "");
-        FileSaver ImgAdnObjectsFile = new FileSaver(imgAdn.getImagePlus());
-        ImgAdnObjectsFile.saveAsTiff(outDir+imgName+"_Adn.tif");
+        ImageHandler imgDna = ImageHandler.wrap(img).createSameDimensions();
+        dnaPop.resetLabels();
+        dnaPop.drawInImage(imgDna);
+        imgDna.getImagePlus().setCalibration(cal);
+        IJ.run(imgDna.getImagePlus(), "glasbey on dark", "");
+        FileSaver ImgDnaObjectsFile = new FileSaver(imgDna.getImagePlus());
+        ImgDnaObjectsFile.saveAsTiff(outDir+imgName+"_Dna.tif");
         flush_close(imgBact.getImagePlus());
-        flush_close(imgAdn.getImagePlus());
+        flush_close(imgDna.getImagePlus());
     }
     
 }

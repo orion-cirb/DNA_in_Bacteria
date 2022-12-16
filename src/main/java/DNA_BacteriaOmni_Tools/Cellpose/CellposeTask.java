@@ -1,6 +1,6 @@
-package Adn_BacteriaOmni_Tools.Cellpose;
+package DNA_BacteriaOmni_Tools.Cellpose;
 
-import Adn_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
+import DNA_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
 import java.util.ArrayList;
 
 public class CellposeTask {

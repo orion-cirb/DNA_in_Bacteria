@@ -7,12 +7,12 @@
 
         
 	<groupId>cirb</groupId>
-	<artifactId>Adn_Bacteria</artifactId>
+	<artifactId>Dna_Bacteria</artifactId>
 	<version>1.0.0</version>
         <packaging>jar</packaging>
-	<name>Adn_Bacteria</name>
+	<name>Dna_Bacteria</name>
 	<description>
-            Find ADN in bacteria
+            Find DNA in bacteria
         </description>
 
 	<developers>
@@ -33,7 +33,7 @@
 	<properties>
                 <imagej.app.directory>/opt/Fiji.app/</imagej.app.directory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<main-class>Adn_Bacteria_Omni.jar</main-class>
+		<main-class>Dna_Bacteria_Omni.jar</main-class>
 	</properties>
 
 	<dependencies>
