@@ -24,9 +24,9 @@
 
 * **3DImageSuite** Fiji plugin
 * **CLIJ** Fiji plugin
-* **Omnipose** conda environment + *bact_phase_omnitorch_0* model
+* **Omnipose** conda environment + *bact_phase_omnitorch_0* *bact_fluor_omnitorch_0* models
 
 ### Version history
 
-Version 1 released on December 6, 2022
+Version 1 released on December 16, 2022
 
