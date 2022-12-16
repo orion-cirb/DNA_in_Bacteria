@@ -1,4 +1,4 @@
-import BacteriaOmni_Tools.Tools;
+import Adn_BacteriaOmni_Tools.Tools;
 import ij.*;
 import ij.plugin.PlugIn;
 import ij.plugin.ZProjector;
@@ -26,10 +26,10 @@ import org.scijava.util.ArrayUtils;
 
 
 /**
- * Detect foci bacteria with OmniPose
+ * Detect ADN bacteria with OmniPose
  * @author Orion-CIRB
  */
-public class Foci_Bacteria implements PlugIn {
+public class Adn_Bacteria implements PlugIn {
     
     Tools tools = new Tools();
     private String imageDir = "";
@@ -64,9 +64,9 @@ public class Foci_Bacteria implements PlugIn {
                 outDir.mkdir();
             }
             // Write header in results file
-             String header = "Image name\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tFoci1 number\tFoci2 number\tFoci1 min. distance to bacterium\t"
-            + "Foci2 min. distance to bacterium\tFoci1-foci2 min distance\tFoci1-foci2 max distance\n";
-   
+             String header = "Image name\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tAdn number\t#Adn\tAdn Area\tAdn intensity\t"
+                     + "Adn center to bacterium center\n";
+            
             FileWriter fwResults = new FileWriter(outDirResults + "results.xls", false);
             results = new BufferedWriter(fwResults);
             results.write(header);
@@ -112,50 +112,36 @@ public class Foci_Bacteria implements PlugIn {
                 tools.print("- Detecting bacteria -");
                 ImagePlus imgBact = tools.doZProjection(bactStack, ZProjector.AVG_METHOD);
                 tools.flush_close(bactStack);
-                Objects3DIntPopulation bactPop = tools.omniposeDetection(imgBact);
+                Objects3DIntPopulation bactPop = tools.omniposeDetection(imgBact, tools.omniposeBactModel, tools.minBactSurface, tools.maxBactSurface);
                 System.out.println(bactPop.getNbObjects() + " bacteria found");
                 
                 
-                // Open foci1 channel
+                // Open adn channel
                 indexCh = ArrayUtils.indexOf(channels, chs[1]);
-                System.out.println("Opening foci1 channel "+chs[1]);
-                ImagePlus foci1Stack = BF.openImagePlus(options)[indexCh];
-                ImagePlus imgFoci1 = tools.doZProjection(foci1Stack, ZProjector.MAX_METHOD);
-                tools.flush_close(foci1Stack);
-                tools.print("- Detecting foci1 -");
-                Objects3DIntPopulation foci1Pop = tools.findFoci(imgFoci1);
-                System.out.println(foci1Pop.getNbObjects() + " foci1 found");
-                tools.fociBactLink(bactPop, foci1Pop);
-                System.out.println(foci1Pop.getNbObjects() + " foci1 found in bacteria");
-                tools.flush_close(imgFoci1);
+                System.out.println("Opening Adn channel "+chs[1]);
+                ImagePlus adnStack = BF.openImagePlus(options)[indexCh];
+                ImagePlus imgAdn = tools.doZProjection(adnStack, ZProjector.MAX_METHOD);
+                tools.flush_close(adnStack);
+                tools.print("- Detecting Adn -");
+                Objects3DIntPopulation adnPop = tools.omniposeDetection(imgAdn, tools.omniposeAdnModel, tools.minAdnSurface, tools.maxAdnSurface);
+                System.out.println(adnPop.getNbObjects() + " adn found");
+                tools.adnBactLink(bactPop, adnPop);
+                System.out.println(adnPop.getNbObjects() + " adn found in bacteria");
                 
-                
-                // Open foci2 channel
-                indexCh = ArrayUtils.indexOf(channels, chs[2]);
-                System.out.println("Opening foci2 channel "+chs[2]);
-                ImagePlus foci2Stack = BF.openImagePlus(options)[indexCh];
-                ImagePlus imgFoci2 = tools.doZProjection(foci2Stack, ZProjector.MAX_METHOD);
-                tools.flush_close(foci2Stack);
-                tools.print("- Detecting foci2 -");
-                Objects3DIntPopulation foci2Pop = tools.findFoci(imgFoci2);
-                System.out.println(foci2Pop.getNbObjects() + " foci2 found");
-                tools.fociBactLink(bactPop, foci2Pop);
-                System.out.println(foci2Pop.getNbObjects() + " foci2 found in bacteria");
-                tools.flush_close(imgFoci2);
-                                
                 // Save results
                 tools.print("- Saving results -");
-                tools.saveResults(bactPop, foci1Pop, foci2Pop, rootName, results);
+                tools.saveResults(bactPop, adnPop, imgAdn, rootName, results);
+                tools.flush_close(imgAdn);
                 
                 // Save images
-                tools.drawResults(imgBact, bactPop, foci1Pop, foci2Pop, rootName, outDirResults);
+                tools.drawResults(imgBact, bactPop, adnPop, rootName, outDirResults);
                 tools.flush_close(imgBact);
             }
         
             tools.print("--- All done! ---");
             
         }   catch (IOException | FormatException | DependencyException | ServiceException ex) {
-            Logger.getLogger(Foci_Bacteria.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Adn_Bacteria.class.getName()).log(Level.SEVERE, null, ex);
         }  
     }
 }    

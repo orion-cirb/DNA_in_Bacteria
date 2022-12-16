@@ -1,4 +1,4 @@
-package BacteriaOmni_Tools.Cellpose;
+package Adn_BacteriaOmni_Tools.Cellpose;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import static java.io.File.separatorChar;
 
 import ij.IJ;
-import BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
+import Adn_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
 
 
 public class Cellpose {

@@ -1,14 +1,13 @@
-package BacteriaOmni_Tools;
+package Adn_BacteriaOmni_Tools;
 
-import BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
-import BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
+import Adn_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
+import Adn_BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
 import ij.measure.Calibration;
 import ij.plugin.Duplicator;
 import fiji.util.gui.GenericDialogPlus;
-import ij.plugin.RGBStackMerge;
 import ij.plugin.ZProjector;
 import java.awt.Color;
 import java.awt.Font;
@@ -17,7 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 import javax.swing.ImageIcon;
 import loci.common.services.DependencyException;
 import loci.common.services.ServiceException;
@@ -31,14 +29,12 @@ import mcib3d.geom2.Objects3DIntPopulationComputation;
 import mcib3d.geom2.VoxelInt;
 import mcib3d.geom2.measurements.MeasureCentroid;
 import mcib3d.geom2.measurements.MeasureFeret;
+import mcib3d.geom2.measurements.MeasureIntensity;
 import mcib3d.geom2.measurements.MeasureVolume;
-import mcib3d.geom2.measurementsPopulation.MeasurePopulationClosestDistance;
-import mcib3d.geom2.measurementsPopulation.PairObjects3DInt;
 import mcib3d.image3d.ImageHandler;
 import mcib3d.image3d.ImageInt;
 import mcib3d.image3d.ImageLabeller;
 import org.apache.commons.io.FilenameUtils;
-import net.haesleinhuepf.clij.clearcl.ClearCLBuffer;
 import net.haesleinhuepf.clij2.CLIJ2;
 
 
@@ -52,30 +48,25 @@ public class Tools {
     private double pixelSurf = 0;
     
      // Omnipose
-    private String omniposeEnvDirPath = "/opt/miniconda3/envs/omnipose";
-    private String omniposeModelsPath = System.getProperty("user.home")+"/.cellpose/models/";
-    private String omniposeModel = "bact_phase_omnitorch_0";
+    private String omniposeEnvDirPath = (IJ.isWindows()) ? System.getProperty("user.home")+"\\miniconda3\\envs\\omnipose\\" : 
+            "/opt/miniconda3/envs/omnipose/";
+    private String omniposeModelsPath = (IJ.isWindows()) ? System.getProperty("user.home")+"\\.cellpose\\models\\" :
+            System.getProperty("user.home")+"/.cellpose/models/";
+    public String omniposeBactModel = "bact_phase_omnitorch_0";
+    public String omniposeAdnModel = "bact_fluor_omnitorch_0";
+     
     private int omniposeDiameter = 10;
     private int omniposeMaskThreshold = 0;
     private double omniposeFlowThreshold = 0.4;
     private boolean useGpu = true;
     
     // Bacteria
-    private double minBactSurface = 0.3;
-    private double maxBactSurface = 5;
+    public double minBactSurface = 0.3;
+    public double maxBactSurface = 5;
     
-    // Foci
-    private double minFociSurface = 0.005;
-    private double maxFociSurface = 0.5;
-    // Foci segmentation method
-    private String[] fociDetectors = {"DOG", "LOG"};
-    private String fociDetector = "LOG";
-    
-    private String fociTh = "Moments";
-    
-    // DOG parameters
-    private double minFociDOG = 1;
-    private double maxFociDOG = 2;
+    // Adn
+    public double minAdnSurface = 0.10;
+    public double maxAdnSurface = 5;
     
     private final CLIJ2 clij2 = CLIJ2.getInstance();
     
@@ -102,63 +93,6 @@ public class Tools {
         return true;
     }
     
-    
-     /**
-     * Difference of Gaussians 
-     * Using CLIJ2
-     * @param imgCL
-     * @param size1
-     * @param size2
-     * @return imgGauss
-     */ 
-    public ImagePlus DOG(ImagePlus img, double size1, double size2) {
-        ClearCLBuffer imgCL = clij2.push(img);
-        ClearCLBuffer imgCLDOG = clij2.create(imgCL);
-        clij2.differenceOfGaussian3D(imgCL, imgCLDOG, size1, size1, size1, size2, size2, size2);
-        clij2.release(imgCL);
-        ImagePlus imgDOG = clij2.pull(imgCLDOG);
-        clij2.release(imgCLDOG);
-        return(imgDOG);
-    }
-    
-    
-    /**
-     * Laplace of Gaussians 
-     * Using CLIJ2
-     * @param imgCL
-     * @param size1
-     * @param size2
-     * @return imgGauss
-     */ 
-    public ImagePlus laplacianOfGaussian(ImagePlus img, double size1, double size2) {
-        ClearCLBuffer imgCL = clij2.push(img);
-        ClearCLBuffer temp1 = clij2.create(imgCL);
-        ClearCLBuffer imgCLLOG = clij2.create(imgCL);
-        clij2.gaussianBlur2D(imgCL, temp1, size1, size2);
-        clij2.laplaceBox(temp1, imgCLLOG);
-        clij2.release(imgCL);
-        clij2.release(temp1);
-        ImagePlus imgLog = clij2.pull(imgCLLOG);
-        clij2.release(imgCLLOG);
-        return(imgLog);
-    }
-    
-    
-    /**
-     * Threshold 
-     * USING CLIJ2
-     * @param imgCL
-     * @param thMed
-     */
-    public ImagePlus threshold(ImagePlus img, String thMed) {
-        ClearCLBuffer imgCL = clij2.push(img);
-        ClearCLBuffer imgCLBin = clij2.create(imgCL);
-        clij2.automaticThreshold(imgCL, imgCLBin, thMed);
-        clij2.release(imgCL);
-        ImagePlus imgBin = clij2.pull(imgCLBin);
-        clij2.release(imgCLBin);
-        return(imgBin);
-    }
     
     /**
      * Flush and close an image
@@ -228,6 +162,8 @@ public class Tools {
         }
         Collections.sort(imageFiles);
     }
+    
+    
      /**
      * Find channels name
      * @param imageName
@@ -294,30 +230,24 @@ public class Tools {
      * Generate dialog box
      */
     public String[] dialog(String[] channels) {
-        String[] channelsName = {"Bacteria : ", "Foci1 : ", "Foci2 : "};
+        String[] channelsName = {"Bacteria : ", "Adn : "};
         GenericDialogPlus gd = new GenericDialogPlus("Parameters");
         gd.setInsets​(0, 80, 0);
         gd.addImage(icon);
         gd.addMessage("Channels", Font.getFont("Monospace"), Color.blue);
         int index = 0;
-        for (String ch : channels) {
-            gd.addChoice(channelsName[index], channels, ch);
+        for (String ch : channelsName) {
+            gd.addChoice(ch, channels, channels[index]);
             index++;
         }
-        gd.addMessage("Bacteria detection", Font.getFont("Monospace"), Color.blue);
-        if (IJ.isWindows()) {
-            omniposeEnvDirPath = System.getProperty("user.home")+"\\miniconda3\\envs\\omnipose";
-            omniposeModelsPath = System.getProperty("user.home")+"\\.cellpose\\models\\";
-        }
+        gd.addMessage("Bacteria / ADN detection", Font.getFont("Monospace"), Color.blue);
         gd.addDirectoryField("Omnipose environment directory: ", omniposeEnvDirPath);
         gd.addDirectoryField("Omnipose models path: ", omniposeModelsPath); 
-        gd.addMessage("Foci detector", Font.getFont("Monospace"), Color.blue);
-        gd.addChoice("Detector : ", fociDetectors, fociDetector);
         gd.addMessage("Object size threshold ", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("Min bacterium surface (µm2): ", minBactSurface);
         gd.addNumericField("Max bacterium surface (µm2): ", maxBactSurface);
-        gd.addNumericField("Min Foci     surface (µm2): ", minFociSurface);
-        gd.addNumericField("Max Foci     surface (µm2): ", maxFociSurface);
+        gd.addNumericField("Min Adn surface (µm2)      : ", minAdnSurface);
+        gd.addNumericField("Max Adn surface (µm2)      : ", maxAdnSurface);
         
         gd.addMessage("Image calibration", Font.getFont("Monospace"), Color.blue);
         gd.addNumericField("XY calibration (µm):", cal.pixelWidth);
@@ -327,11 +257,10 @@ public class Tools {
             ch[i] = gd.getNextChoice();
         omniposeEnvDirPath = gd.getNextString();
         omniposeModelsPath = gd.getNextString();
-        fociDetector = gd.getNextChoice();
         minBactSurface = (float) gd.getNextNumber();
         maxBactSurface = (float) gd.getNextNumber();
-        minFociSurface = (float) gd.getNextNumber();
-        maxFociSurface = (float) gd.getNextNumber();
+        minAdnSurface = (float) gd.getNextNumber();
+        maxAdnSurface = (float) gd.getNextNumber();
         cal.pixelWidth = gd.getNextNumber();
         pixelSurf = cal.pixelWidth*cal.pixelWidth;
         if(gd.wasCanceled())
@@ -395,12 +324,12 @@ public class Tools {
     /**
     * Detect bacteria with Omnipose
     */
-    public Objects3DIntPopulation omniposeDetection(ImagePlus imgBact){
+    public Objects3DIntPopulation omniposeDetection(ImagePlus imgBact, String model, double min, double max){
 
         ImagePlus imgIn = new Duplicator().run(imgBact);
         imgIn.setCalibration(cal);
         // Set Omnipose settings
-        CellposeTaskSettings settings = new CellposeTaskSettings(omniposeModelsPath+omniposeModel, 1, omniposeDiameter, omniposeEnvDirPath);
+        CellposeTaskSettings settings = new CellposeTaskSettings(omniposeModelsPath+model, 1, omniposeDiameter, omniposeEnvDirPath);
         settings.setVersion("0.7");
         settings.setCluster(true);
         settings.setOmni(true);
@@ -415,7 +344,7 @@ public class Tools {
         imgOut.setCalibration(cal);
         Objects3DIntPopulation pop = new Objects3DIntPopulation(ImageHandler.wrap(imgOut));
         Objects3DIntPopulation popFilter = new Objects3DIntPopulationComputation(pop).getExcludeBorders(ImageHandler.wrap(imgOut), false);
-        popFilterSize(popFilter, minBactSurface, maxBactSurface);
+        popFilterSize(popFilter, min, max);
         
         // Close images
         flush_close(imgIn);
@@ -424,83 +353,51 @@ public class Tools {
     }
     
     
-    /**
-     * Find foci with DOG
-     * @param img
-     * @return 
-     */
-    
-    public Objects3DIntPopulation findFoci(ImagePlus img) {
-        ImagePlus imgFilter = (fociDetector.equals("DOG") ? DOG(img, minFociDOG, maxFociDOG) : laplacianOfGaussian(img, minFociDOG, maxFociDOG));
-        ImagePlus imgBin = threshold(imgFilter, fociTh);
-        flush_close(imgFilter);
-        imgBin.setCalibration(cal);
-        Objects3DIntPopulation fociPop = getPopFromImage(imgBin);
-        flush_close(imgBin);
-        popFilterSize(fociPop, minFociSurface, maxFociSurface);
-        return(fociPop);
-        
-    }
-    
-    
      /**
-     * Find coloc between foci and bacteria
-     * set label of colocalized bacteria in foci object
+     * Find coloc between Adn and bacteria
+     * set label of colocalized bacteria in adn ID object
      * @param bactPop
-     * @param fociPop
+     * @param adnPop
      */
-    public void fociBactLink(Objects3DIntPopulation bactPop, Objects3DIntPopulation fociPop) {
-        if (bactPop.getNbObjects() != 0 && fociPop.getNbObjects() != 0) {
+    public void adnBactLink(Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop) {
+        if (bactPop.getNbObjects() != 0 && adnPop.getNbObjects() != 0) {
             for (Object3DInt bact : bactPop.getObjects3DInt()) {
-                for (Object3DInt foci : fociPop.getObjects3DInt()) {
-                    MeasureCentroid fociCenter = new MeasureCentroid(foci);
-                    if (bact.contains(fociCenter.getCentroidRoundedAsVoxelInt())){
-                       foci.setIdObject(bact.getLabel()); 
+                for (Object3DInt adn : adnPop.getObjects3DInt()) {
+                    MeasureCentroid adnCenter = new MeasureCentroid(adn);
+                    if (bact.contains(adnCenter.getCentroidRoundedAsVoxelInt())){
+                       adn.setIdObject(bact.getLabel()); 
                     }
                 }
             }
         }
         // remove foci not in bacteria
-        fociPop.getObjects3DInt().removeIf(p -> p.getIdObject() == 0);
-        fociPop.resetLabels();
+        adnPop.getObjects3DInt().removeIf(p -> p.getIdObject() == 0);
+        adnPop.resetLabels();
     }
     
     /**
-     * Compute min distance between foci to bacteria border
+     * Compute distance between adn center to bacteria center
      */
-    private ArrayList<Double> fociBactDistance(Objects3DIntPopulation fociPop, VoxelInt bactFeret1) {
-        ArrayList<Double> minFociDist = new ArrayList<>();
-        for (Object3DInt foci : fociPop.getObjects3DInt()) {
-            Voxel3D fociCenter = new MeasureCentroid(foci).getCentroidAsVoxel();
-            double dist = bactFeret1.distance(fociCenter)*cal.pixelWidth;
-            minFociDist.add(dist);
-        }
-        return(minFociDist);
+    private double adnBactDistance(Object3DInt adn, Object3DInt bact) {
+        Voxel3D bactCenter = new MeasureCentroid(bact).getCentroidAsVoxel();
+        Voxel3D adnCenter = new MeasureCentroid(adn).getCentroidAsVoxel();
+        double dist = bactCenter.distance(adnCenter)*cal.pixelWidth;
+        return(dist);
     }
     
     /**
      * 
     */
-    private Objects3DIntPopulation findFociBact(float bactLabel, Objects3DIntPopulation fociPop) {
-        Objects3DIntPopulation fociBactPop = new Objects3DIntPopulation();
-        for (Object3DInt foci : fociPop.getObjects3DInt()) {
-                if (foci.getIdObject() == bactLabel)
-                    fociBactPop.addObject(foci);
+    private Objects3DIntPopulation findAdnBact(float bactLabel, Objects3DIntPopulation adnPop) {
+        Objects3DIntPopulation adnBactPop = new Objects3DIntPopulation();
+        for (Object3DInt adn : adnPop.getObjects3DInt()) {
+                if (adn.getIdObject() == bactLabel)
+                    adnBactPop.addObject(adn);
         }
-        fociBactPop.resetLabels();
-        return(fociBactPop) ;           
+        adnBactPop.resetLabels();
+        return(adnBactPop) ;           
     }
     
-    /**
-     * Compute min,max distances between foci1 and foci2
-     */
-    private double[] fociFociDistance(Objects3DIntPopulation foci1Pop, Objects3DIntPopulation foci2Pop) {
-        MeasurePopulationClosestDistance allDist =  new MeasurePopulationClosestDistance​(foci1Pop, foci2Pop);
-        allDist.setDistanceMax(5);
-        List<PairObjects3DInt> allDistPairs = allDist.getAllPairs(true);
-        double[] minMaxDist = {allDistPairs.get(0).getPairValue(), allDistPairs.get(allDistPairs.size()-1).getPairValue()};
-        return(minMaxDist);
-    }
     
     /**
      * Compute bacteria area
@@ -511,80 +408,66 @@ public class Tools {
         return(pixelNb*pixelSurf);
     }   
     
-    
+   
     
     /**
      * Compute bacteria parameters and save them in file
      * @param bactPop
-     * @param foci1Pop
-     * @param foci2Pop
+     * @param adnPop
      * @param imgName
      * @param file
      * @throws java.io.IOException
      */
-    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation foci1Pop, Objects3DIntPopulation foci2Pop, String imgName, BufferedWriter file) throws IOException {
+    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop, ImagePlus adnImg, String imgName, BufferedWriter file) throws IOException {
         for (Object3DInt bact : bactPop.getObjects3DInt()) {
             float bactLabel = bact.getLabel();
-            //double bactSurf = new MeasureVolume(bact).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
             double bactSurf = bacteriaSurface(bact);
             VoxelInt feret1Unit = new MeasureFeret(bact).getFeret1Unit();
             VoxelInt feret2Unit = new MeasureFeret(bact).getFeret2Unit();
             double bactLength = feret1Unit.distance(feret2Unit)*cal.pixelWidth;
             
-            Objects3DIntPopulation foci1BactPop = findFociBact(bactLabel, foci1Pop);
-            int foci1Nb = foci1BactPop.getNbObjects();
-            ArrayList<Double> minFoci1Dist = (foci1Nb == 0) ? null : fociBactDistance(foci1BactPop, feret1Unit);
-            Objects3DIntPopulation foci2BactPop = findFociBact(bactLabel, foci2Pop);  
-            int foci2Nb = foci2BactPop.getNbObjects();
-            ArrayList<Double> minFoci2Dist = (foci2Nb == 0) ? null : fociBactDistance(foci2BactPop, feret1Unit);
-            int fociMax = Math.max(foci1Nb, foci2Nb);
-            double[] foci1Foci2Distance = (foci1Nb == 0 || foci2Nb == 0) ? null : fociFociDistance(foci1BactPop, foci2BactPop);
-            file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+foci1Nb+"\t"+foci2Nb+"\t");
-            if (fociMax != 0) {
-                for (int i = 0; i < fociMax; i++) {
-                    if (i != 0)
-                        file.write("\t\t\t\t\t\t");
-                    if (minFoci1Dist != null && i < minFoci1Dist.size())
-                        file.write(minFoci1Dist.get(i)+"\t");
-                    else
-                        file.write("\t");
-                    if (minFoci2Dist != null && i < minFoci2Dist.size())
-                        file.write(minFoci2Dist.get(i)+"\t");
-                    else
-                        file.write("\t");
-                    if (foci1Foci2Distance != null && i == 0)
-                        file.write(foci1Foci2Distance[0]+"\t"+foci1Foci2Distance[1]+"\n");
-                    else
-                        file.write("\t\t\n");
-                }
+            Objects3DIntPopulation adnBactPop = findAdnBact(bactLabel, adnPop);
+            int adnNb = adnBactPop.getNbObjects();
+            if (adnNb == 0) {
+                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+adnNb+"\n");
+                file.flush();
             }
-            else
-                file.write("\t\t\t\t\n");
-            file.flush();
+            else {
+                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+adnNb+"\t");
+                for (Object3DInt adn : adnBactPop.getObjects3DInt()) {
+                    int i = (int)adn.getLabel();
+                    double adnSurf = bacteriaSurface(adn);
+                    double adnInt = new MeasureIntensity(adn, ImageHandler.wrap(adnImg)).getValueMeasurement(MeasureIntensity.INTENSITY_SUM);
+                    double adnDist = adnBactDistance(adn, bact);
+                    if (i == 1)
+                        file.write(i+"\t"+adnSurf+"\t"+adnInt+"\t"+adnDist+"\n");
+                    else
+                        file.write("\t\t\t\t\t"+i+"\t"+adnSurf+"\t"+adnInt+"\t"+adnDist+"\n");
+                }
+                file.flush();
+            }
         }
     }
    
     
     // Save objects image
-    public void drawResults(ImagePlus img, Objects3DIntPopulation bactPop, Objects3DIntPopulation foci1Pop, Objects3DIntPopulation foci2Pop,String imgName, String outDir) {
+    public void drawResults(ImagePlus img, Objects3DIntPopulation bactPop, Objects3DIntPopulation adnPop, String imgName, String outDir) {
         ImageHandler imgBact = ImageHandler.wrap(img).createSameDimensions();
         bactPop.drawInImage(imgBact);
         IJ.run(imgBact.getImagePlus(), "glasbey on dark", "");
         imgBact.getImagePlus().setCalibration(cal);
-        FileSaver ImgObjectsFile = new FileSaver(imgBact.getImagePlus());
-        ImgObjectsFile.saveAsTiff(outDir+imgName+"_bacteria.tif");
+        FileSaver ImgBactObjectsFile = new FileSaver(imgBact.getImagePlus());
+        ImgBactObjectsFile.saveAsTiff(outDir+imgName+"_bacteria.tif");
         
-        ImageHandler imgFoci1 = ImageHandler.wrap(img).createSameDimensions();
-        foci1Pop.drawInImage(imgFoci1);
-        ImageHandler imgFoci2 = ImageHandler.wrap(img).createSameDimensions();
-        foci2Pop.drawInImage(imgFoci2);
-        ImagePlus[] imgColors = {imgFoci1.getImagePlus(), imgFoci2.getImagePlus(), null, img};
-        ImagePlus imgOut = new RGBStackMerge().mergeHyperstacks(imgColors, true);
-        imgOut.setCalibration(cal);
-        FileSaver ImgObjectsFile2 = new FileSaver(imgOut);
-        ImgObjectsFile2.saveAsTiff(outDir + imgName + "_overlay.tif");
+        ImageHandler imgAdn = ImageHandler.wrap(img).createSameDimensions();
+        adnPop.resetLabels();
+        adnPop.drawInImage(imgAdn);
+        imgAdn.getImagePlus().setCalibration(cal);
+        IJ.run(imgAdn.getImagePlus(), "glasbey on dark", "");
+        FileSaver ImgAdnObjectsFile = new FileSaver(imgAdn.getImagePlus());
+        ImgAdnObjectsFile.saveAsTiff(outDir+imgName+"_Adn.tif");
         flush_close(imgBact.getImagePlus());
-        flush_close(imgOut);
+        flush_close(imgAdn.getImagePlus());
     }
     
 }

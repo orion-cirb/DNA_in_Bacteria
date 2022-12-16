@@ -7,12 +7,12 @@
 
         
 	<groupId>cirb</groupId>
-	<artifactId>Foci_Bacteria</artifactId>
+	<artifactId>Adn_Bacteria</artifactId>
 	<version>1.0.0</version>
         <packaging>jar</packaging>
-	<name>Foci_Bacteria</name>
+	<name>Adn_Bacteria</name>
 	<description>
-            Find foci in bacteria
+            Find ADN in bacteria
         </description>
 
 	<developers>
@@ -33,7 +33,7 @@
 	<properties>
                 <imagej.app.directory>/opt/Fiji.app/</imagej.app.directory>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<main-class>Foci_Bacteria_Omni.jar</main-class>
+		<main-class>Adn_Bacteria_Omni.jar</main-class>
 	</properties>
 
 	<dependencies>

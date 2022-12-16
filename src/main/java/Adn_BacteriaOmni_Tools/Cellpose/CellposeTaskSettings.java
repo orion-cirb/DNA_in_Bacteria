@@ -1,4 +1,4 @@
-package BacteriaOmni_Tools.Cellpose;
+package Adn_BacteriaOmni_Tools.Cellpose;
 
 
 public class CellposeTaskSettings {
