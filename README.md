@@ -28,5 +28,5 @@
 
 ### Version history
 
-Version 1 released on December 16, 2022
+Version 1 released on December 16, 2022.
 
