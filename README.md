@@ -16,8 +16,8 @@
 ### Plugin description
 
 * Detect bacteria on the average intensity Z-projection of channel 3 with Omnipose
-* Detect DNA on the max intensity Z-projection of channels DAPI with Omnipose
-* In each bacterium, return distances between bacterium centroid and DAN centroid and colocalization events
+* Detect DNA on the max intensity Z-projection of channel 1 with Omnipose
+* In each bacterium, return distances between bacterium centroid and DNA centroid and colocalization events
 
 
 ### Dependencies
