@@ -1,4 +1,4 @@
-# Dna_in_bacteria
+# DNA_in_bacteria
 
 * **Developed for:** Céline
 * **Team:** Espeli
