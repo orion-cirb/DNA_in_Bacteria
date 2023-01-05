@@ -2,7 +2,7 @@
 
 * **Developed for:** Céline
 * **Team:** Espeli
-* **Date:** December 2022
+* **Date:** January 2023
 * **Software:** Fiji
 
 
@@ -10,15 +10,14 @@
 
 3D images taken with a x60 objective
 
-3 channels:
+2 channels:
   1. *DAPI:* DNA
-  2. *phiYFP:* foci
-  3. *TL phase:* bacteria
+  2. *TL phase:* bacteria
 
 ### Plugin description
 
-* Detect bacteria on the average intensity Z-projection of channel 3 with Omnipose
-* Detect DNA on the max intensity Z-projection of channel 1 with Omnipose
+* Detect bacteria on the average intensity Z-projection of channel 2 with Omnipose
+* Detect DNA on the average intensity Z-projection of channel 1 with Omnipose
 * In each bacterium, return distances between bacterium centroid and DNA centroid
 
 
@@ -30,5 +29,5 @@
 
 ### Version history
 
-Version 1 released on December 16, 2022.
+Version 1 released on January 5, 2023.
 
