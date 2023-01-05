@@ -25,7 +25,7 @@
 
 * **3DImageSuite** Fiji plugin
 * **CLIJ** Fiji plugin
-* **Omnipose** conda environment + *bact_phase_omnitorch_0* *bact_fluor_omnitorch_0* models
+* **Omnipose** conda environment + *bact_phase_omnitorch_0* and *bact_fluor_omnitorch_0* models
 
 ### Version history
 
