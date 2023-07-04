@@ -63,7 +63,7 @@ public class Dna_Bacteria implements PlugIn {
                 outDir.mkdir();
             }
             // Write header in results file
-             String header = "Image name\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tDNA number\t# DNA\tDNA surface (µm2)\tDNA total intensity\t"
+             String header = "Image name\tTime\t# bacterium\tBacterium surface (µm2)\tBacterium length (µm)\tDNA number\t# DNA\tDNA surface (µm2)\tDNA total intensity\t"
                      + "DNA center to bacterium center (µm)\n";
             FileWriter fwResults = new FileWriter(outDirResults + "results.xls", false);
             results = new BufferedWriter(fwResults);
@@ -93,23 +93,25 @@ public class Dna_Bacteria implements PlugIn {
             }
             
             for (String f : imageFiles) {
-                reader.setId(f);
-                String rootName = FilenameUtils.getBaseName(f);                
+                reader.setId(f);              
                 ImporterOptions options = new ImporterOptions();
                 options.setId(f);
                 options.setQuiet(true);
                 options.setColorMode(ImporterOptions.COLOR_MODE_GRAYSCALE);
                 options.setSplitChannels(true);
+                
                 int series = reader.getSeriesCount();
                 for (int s = 0; s < series; s++) {
-                    options.setSeriesOn(s, true);
                     reader.setSeries(s);
+                    options.setSeriesOn(s, true);
                     String seriesName = meta.getImageName(s);
+                    
                     int time = reader.getSizeT();
                     for (int t = 0; t < time; t++) {
-                        tools.print("--- ANALYZING IMAGE " + rootName + ", series = "+seriesName+", time = "+t+" ------");
+                        tools.print("--- ANALYZING IMAGE " + seriesName + " at time " + (t+1) + " ---");
                         options.setTBegin(s, t);
                         options.setTEnd(s, t);
+                        
                         // Open bacteria channel
                         int indexCh = ArrayUtils.indexOf(channels, chs[0]);
                         System.out.println("Opening phase channel "+chs[0] );
@@ -139,11 +141,10 @@ public class Dna_Bacteria implements PlugIn {
 
                         // Save results
                         tools.print("- Saving results -");
-                        String imageName = rootName+"_"+seriesName+"_t-"+t;
-                        tools.saveResults(bactPop, dnaPop, imgDna, imageName, results);
+                        tools.saveResults(bactPop, dnaPop, imgDna, seriesName, t+1, results);
 
                         // Save images
-                        tools.drawResults(imgBact, imgDna, bactPop, dnaPop, imageName, outDirResults);
+                        tools.drawResults(imgBact, imgDna, bactPop, dnaPop, seriesName+"_t"+(t+1), outDirResults);
                         tools.flush_close(imgBact);
                         tools.flush_close(imgDna);
                     }

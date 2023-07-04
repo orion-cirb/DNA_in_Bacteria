@@ -369,7 +369,7 @@ public class Tools {
      * Compute bacteria parameters and save them in file
      * @throws java.io.IOException
      */
-    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop, ImagePlus dnaImg, String imgName, BufferedWriter file) throws IOException {
+    public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop, ImagePlus dnaImg, String imgName, int time, BufferedWriter file) throws IOException {
         for (Object3DInt bact : bactPop.getObjects3DInt()) {
             float bactLabel = bact.getLabel();
             double bactSurf = new MeasureVolume(bact).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
@@ -380,13 +380,13 @@ public class Tools {
             Objects3DIntPopulation dnaBactPop = findDnaInBact(bactLabel, dnaPop);
             int dnaNb = dnaBactPop.getNbObjects();
             if (dnaNb == 0) {
-                file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\n");
+                file.write(imgName+"\t"+time+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\n");
             } else {
                 for (Object3DInt dna: dnaBactPop.getObjects3DInt()) {
                     double dnaSurf = new MeasureVolume(dna).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
                     double dnaInt = new MeasureIntensity(dna, ImageHandler.wrap(dnaImg)).getValueMeasurement(MeasureIntensity.INTENSITY_SUM);
                     double dnaDist = dnaBactDistance(dna, bact);
-                    file.write(imgName+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\t"+dna.getLabel()+"\t"+dnaSurf+"\t"+dnaInt+"\t"+dnaDist+"\n");
+                    file.write(imgName+"\t"+time+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\t"+dna.getLabel()+"\t"+dnaSurf+"\t"+dnaInt+"\t"+dnaDist+"\n");
                 }
             }
             file.flush();
