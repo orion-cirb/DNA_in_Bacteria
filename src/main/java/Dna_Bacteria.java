@@ -1,6 +1,5 @@
 import Dna_BacteriaOmni_Tools.Tools;
 import ij.*;
-import ij.gui.WaitForUserDialog;
 import ij.plugin.PlugIn;
 import ij.plugin.ZProjector;
 import java.io.BufferedWriter;
@@ -22,7 +21,6 @@ import loci.plugins.BF;
 import loci.plugins.util.ImageProcessorReader;
 import loci.plugins.in.ImporterOptions;
 import mcib3d.geom2.Objects3DIntPopulation;
-import mcib3d.image3d.ImageHandler;
 import org.apache.commons.io.FilenameUtils;
 import org.scijava.util.ArrayUtils;
 
@@ -96,50 +94,61 @@ public class Dna_Bacteria implements PlugIn {
             
             for (String f : imageFiles) {
                 reader.setId(f);
-                String rootName = FilenameUtils.getBaseName(f);
-                tools.print("--- ANALYZING IMAGE " + rootName + " ------");
-                
+                String rootName = FilenameUtils.getBaseName(f);                
                 ImporterOptions options = new ImporterOptions();
                 options.setId(f);
                 options.setQuiet(true);
                 options.setColorMode(ImporterOptions.COLOR_MODE_GRAYSCALE);
                 options.setSplitChannels(true);
-                
-                // Open bacteria channel
-                int indexCh = ArrayUtils.indexOf(channels, chs[0]);
-                System.out.println("Opening phase channel "+chs[0] );
-                ImagePlus bactStack = BF.openImagePlus(options)[indexCh];
-                ImagePlus imgBact = tools.doZProjection(bactStack, ZProjector.AVG_METHOD);
-                tools.flush_close(bactStack);
-                
-                // Detect bacteria with Omnipose
-                tools.print("- Detecting bacteria -");
-                Objects3DIntPopulation bactPop = tools.omniposeDetection(imgBact, tools.omniposeBactModel, tools.minBactSurface, tools.maxBactSurface, true);
-                System.out.println(bactPop.getNbObjects() + " bacteria found");
-                
-                // Open DNA channel
-                indexCh = ArrayUtils.indexOf(channels, chs[1]);
-                System.out.println("Opening DNA channel "+chs[1]);
-                ImagePlus dnaStack = BF.openImagePlus(options)[indexCh];
-                ImagePlus imgDna = tools.doZProjection(dnaStack, ZProjector.AVG_METHOD);
-                tools.flush_close(dnaStack);
-                
-                // Detect DNA with Omnipose
-                tools.print("- Detecting DNA -");
-                Objects3DIntPopulation dnaPop = tools.omniposeDetection(imgDna, tools.omniposeDnaModel, tools.minDnaSurface, tools.maxDnaSurface, false);
-                System.out.println(dnaPop.getNbObjects() + " DNA found");
-               
-                tools.dnaBactLink(bactPop, dnaPop);
-                System.out.println(dnaPop.getNbObjects() + " DNA found in bacteria");
-                
-                // Save results
-                tools.print("- Saving results -");
-                tools.saveResults(bactPop, dnaPop, imgDna, rootName, results);
-                
-                // Save images
-                tools.drawResults(imgBact, imgDna, bactPop, dnaPop, rootName, outDirResults);
-                tools.flush_close(imgBact);
-                tools.flush_close(imgDna);
+                int series = reader.getSeriesCount();
+                for (int s = 0; s < series; s++) {
+                    options.setSeriesOn(s, true);
+                    reader.setSeries(s);
+                    String seriesName = meta.getImageName(s);
+                    int time = reader.getSizeT();
+                    for (int t = 0; t < time; t++) {
+                        tools.print("--- ANALYZING IMAGE " + rootName + ", series = "+seriesName+", time = "+t+" ------");
+                        options.setTBegin(s, t);
+                        options.setTEnd(s, t);
+                        // Open bacteria channel
+                        int indexCh = ArrayUtils.indexOf(channels, chs[0]);
+                        System.out.println("Opening phase channel "+chs[0] );
+                        ImagePlus bactStack = BF.openImagePlus(options)[indexCh];
+                        ImagePlus imgBact = tools.doZProjection(bactStack, ZProjector.AVG_METHOD);
+                        tools.flush_close(bactStack);
+
+                        // Detect bacteria with Omnipose
+                        tools.print("- Detecting bacteria -");
+                        Objects3DIntPopulation bactPop = tools.omniposeDetection(imgBact, tools.omniposeBactModel, tools.minBactSurface, tools.maxBactSurface, true);
+                        System.out.println(bactPop.getNbObjects() + " bacteria found");
+
+                        // Open DNA channel
+                        indexCh = ArrayUtils.indexOf(channels, chs[1]);
+                        System.out.println("Opening DNA channel "+chs[1]);
+                        ImagePlus dnaStack = BF.openImagePlus(options)[indexCh];
+                        ImagePlus imgDna = tools.doZProjection(dnaStack, ZProjector.AVG_METHOD);
+                        tools.flush_close(dnaStack);
+
+                        // Detect DNA with Omnipose
+                        tools.print("- Detecting DNA -");
+                        Objects3DIntPopulation dnaPop = tools.omniposeDetection(imgDna, tools.omniposeDnaModel, tools.minDnaSurface, tools.maxDnaSurface, false);
+                        System.out.println(dnaPop.getNbObjects() + " DNA found");
+
+                        tools.dnaBactLink(bactPop, dnaPop);
+                        System.out.println(dnaPop.getNbObjects() + " DNA found in bacteria");
+
+                        // Save results
+                        tools.print("- Saving results -");
+                        String imageName = rootName+"_"+seriesName+"_t-"+t;
+                        tools.saveResults(bactPop, dnaPop, imgDna, imageName, results);
+
+                        // Save images
+                        tools.drawResults(imgBact, imgDna, bactPop, dnaPop, imageName, outDirResults);
+                        tools.flush_close(imgBact);
+                        tools.flush_close(imgDna);
+                    }
+                    options.clearSeries();
+                }
             }
         
             tools.print("--- All done! ---");
