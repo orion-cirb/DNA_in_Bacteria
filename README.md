@@ -31,5 +31,5 @@
 
 Version 1 released on January 5, 2023.
 
-Version 2 released on July 4, 2023: plugin able to handle images with multiple series and times.
+Version 2 released on July 4, 2023: can handle images with multiple series and times.
 
