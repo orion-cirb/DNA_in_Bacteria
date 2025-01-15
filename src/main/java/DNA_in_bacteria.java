@@ -1,4 +1,4 @@
-import Dna_BacteriaOmni_Tools.Tools;
+import DNA_in_bacteria_Tools.Tools;
 import ij.*;
 import ij.plugin.PlugIn;
 import ij.plugin.ZProjector;
@@ -21,15 +21,14 @@ import loci.plugins.BF;
 import loci.plugins.util.ImageProcessorReader;
 import loci.plugins.in.ImporterOptions;
 import mcib3d.geom2.Objects3DIntPopulation;
-import org.apache.commons.io.FilenameUtils;
 import org.scijava.util.ArrayUtils;
 
 
 /**
- * Detect bacteria and DNA in them with OmniPose
+ * Detect bacteria and DNA in them with Omnipose
  * @author Orion-CIRB
  */
-public class Dna_Bacteria implements PlugIn {
+public class DNA_in_bacteria implements PlugIn {
     
     Tools tools = new Tools();
     private String imageDir = "";
@@ -155,7 +154,7 @@ public class Dna_Bacteria implements PlugIn {
             tools.print("--- All done! ---");
             
         }   catch (IOException | FormatException | DependencyException | ServiceException ex) {
-            Logger.getLogger(Dna_Bacteria.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(DNA_in_bacteria.class.getName()).log(Level.SEVERE, null, ex);
         }  
     }
 }    

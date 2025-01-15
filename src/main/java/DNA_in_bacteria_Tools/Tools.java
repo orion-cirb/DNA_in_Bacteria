@@ -1,7 +1,7 @@
-package Dna_BacteriaOmni_Tools;
+package DNA_in_bacteria_Tools;
 
-import DNA_BacteriaOmni_Tools.Cellpose.CellposeTaskSettings;
-import DNA_BacteriaOmni_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
+import DNA_in_bacteria_Tools.Cellpose.CellposeTaskSettings;
+import DNA_in_bacteria_Tools.Cellpose.CellposeSegmentImgPlusAdvanced;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.io.FileSaver;
@@ -372,7 +372,7 @@ public class Tools {
     public void saveResults(Objects3DIntPopulation bactPop, Objects3DIntPopulation dnaPop, ImagePlus dnaImg, String imgName, int time, BufferedWriter file) throws IOException {
         for (Object3DInt bact : bactPop.getObjects3DInt()) {
             float bactLabel = bact.getLabel();
-            double bactSurf = new MeasureVolume(bact).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
+            double bactSurf = new MeasureVolume(bact).getVolumeUnit();
             VoxelInt feret1Unit = new MeasureFeret(bact).getFeret1Unit();
             VoxelInt feret2Unit = new MeasureFeret(bact).getFeret2Unit();
             double bactLength = feret1Unit.distance(feret2Unit)*cal.pixelWidth;
@@ -383,7 +383,7 @@ public class Tools {
                 file.write(imgName+"\t"+time+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\n");
             } else {
                 for (Object3DInt dna: dnaBactPop.getObjects3DInt()) {
-                    double dnaSurf = new MeasureVolume(dna).getValueMeasurement(MeasureVolume.VOLUME_UNIT);
+                    double dnaSurf = new MeasureVolume(dna).getVolumeUnit();
                     double dnaInt = new MeasureIntensity(dna, ImageHandler.wrap(dnaImg)).getValueMeasurement(MeasureIntensity.INTENSITY_SUM);
                     double dnaDist = dnaBactDistance(dna, bact);
                     file.write(imgName+"\t"+time+"\t"+bactLabel+"\t"+bactSurf+"\t"+bactLength+"\t"+dnaNb+"\t"+dna.getLabel()+"\t"+dnaSurf+"\t"+dnaInt+"\t"+dnaDist+"\n");
